@@ -1,0 +1,100 @@
+//@version=6
+strategy("CRT TBS v17.5 - Cooldown Hunter", overlay=true)
+
+body_perc = input.float(50.0, "Min Body %")
+fast_ema_len = input.int(15, "Fast Trigger EMA")
+cooldown_bars = input.int(10, "Cooldown Bars after Trade")
+
+trigger_ema = ta.ema(close, fast_ema_len)
+
+plot(
+    trigger_ema,
+    color=color.new(color.yellow, 0),
+    title="Fast Trigger EMA",
+    linewidth=2
+)
+
+var float crt_h = na
+var float crt_l = na
+var int last_trade_bar = 0
+
+if strategy.position_size == 0
+    crt_h := na
+    crt_l := na
+
+bool is_cooled_down =
+    (bar_index - last_trade_bar) >= cooldown_bars
+
+float c_range = high[1] - low[1]
+float b_size = math.abs(close[1] - open[1])
+
+bool is_crt =
+    is_cooled_down and
+    (c_range > 0) and
+    (b_size >= c_range * (body_perc / 100))
+
+if is_crt and strategy.position_size == 0
+    crt_h := high[1]
+    crt_l := low[1]
+
+bool bull =
+    not na(crt_l) and
+    (low < crt_l) and
+    (close > crt_l) and
+    (close > trigger_ema)
+
+bool bear =
+    not na(crt_h) and
+    (high > crt_h) and
+    (close < crt_h) and
+    (close < trigger_ema)
+
+if bull
+    strategy.entry(
+        "Long",
+        strategy.long,
+        comment="Long Entry new"
+    )
+
+    label.new(
+        bar_index,
+        low,
+        "BUY",
+        color=color.green,
+        textcolor=color.white,
+        style=label.style_label_up,
+        size=size.small
+    )
+
+    last_trade_bar := bar_index
+
+if strategy.position_size > 0
+    strategy.close(
+        "Long",
+        comment="Reset Memory"
+    )
+
+if bear
+    strategy.entry(
+        "Short",
+        strategy.short,
+        comment="Short Entry new"
+    )
+
+    label.new(
+        bar_index,
+        high,
+        "SELL",
+        color=color.red,
+        textcolor=color.white,
+        style=label.style_label_down,
+        size=size.small
+    )
+
+    last_trade_bar := bar_index
+
+if strategy.position_size < 0
+    strategy.close(
+        "Short",
+        comment="Reset Memory"
+    )
