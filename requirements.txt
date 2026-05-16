@@ -1,0 +1,12 @@
+# Install all dependencies:
+# pip install -r requirements.txt
+
+# Web Framework
+fastapi==0.111.0
+uvicorn==0.30.1
+
+# MT5 Integration
+MetaTrader5==5.0.45
+
+# Environment Variables
+python-dotenv==1.0.1
