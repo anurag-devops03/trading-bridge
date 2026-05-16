@@ -27,7 +27,7 @@ Live Trade Executed (GOLD)
 
 ## Project Status
 - [x] Phase 1 — Project Structure
-- [ ] Phase 2 — Security Setup (.gitignore + .env)
+- [x] Phase 2 — Security Setup (.gitignore + .env)
 - [ ] Phase 3 — Clean Modular Codebase
 - [ ] Phase 4 — Dependencies (requirements.txt)
 - [ ] Phase 5 — Documentation
