@@ -3,6 +3,10 @@
 A production-grade automated trading bridge that connects TradingView alerts
 to MetaTrader 5 (MT5) for live trade execution on GOLD (XAUUSD), deployed on AWS EC2.
 
+> This system was deployed live on AWS EC2 and executed real trades automatically.
+
+---
+
 ## Tech Stack
 - **Strategy:** Pine Script v6 (TradingView)
 - **Bridge:** Python 3.12 + FastAPI
@@ -11,39 +15,71 @@ to MetaTrader 5 (MT5) for live trade execution on GOLD (XAUUSD), deployed on AWS
 - **Hosting:** AWS EC2 (Windows Server)
 - **Security:** python-dotenv (.env based credentials)
 
+---
+
 ## System Architecture
-TradingView (Pine Script Strategy)
+TradingView (Pine Script v6)
 │
-│  Webhook Alert (HTTP POST)
+│  Webhook Alert — HTTP POST
+│  { "action": "buy", "comment": "Long Entry new" }
 ▼
-Python FastAPI Bridge (AWS EC2)
+FastAPI Bridge — AWS EC2 Windows (port 80)
 │
-│  MT5 Python Library
+├── Filter housekeeping signals (Reset/Internal → skip)
+├── Route signal → correct order type + SL/TP
+│
 ▼
 MetaTrader 5 Terminal
 │
 ▼
-Live Trade Executed (GOLD)
+✅ Live Trade Executed on GOLD (XAUUSD)
+---
 
-## Project Status
-- [x] Phase 1 — Project Structure
-- [x] Phase 2 — Security Setup (.gitignore + .env)
-- [x] Phase 3 — Clean Modular Codebase
-- [x] Phase 4 — Dependencies (requirements.txt)
-- [x] Phase 5 — Documentation
-- [ ] Phase 6 — GitHub Deployment
+## Signal Routing Logic
+
+| TradingView Signal | Comment Tag | MT5 Action | SL / TP |
+|---|---|---|---|
+| BUY | Long Entry new | SELL (fade) | 3.5 / 3.5 |
+| SELL | Short Entry new | BUY (fade) | 3.5 / 3.5 |
+| BUY | Long Entry | BUY (standard) | 2.0 / 2.5 |
+| SELL | Short Entry | SELL (standard) | 2.0 / 2.5 |
+| ANY | Reset / Internal | SKIP | — |
+
+---
+
+## Project Structure
+trading-bridge/
+│
+├── app/
+│   ├── init.py       ← Python package marker
+│   ├── main.py           ← FastAPI app + webhook endpoint
+│   ├── trader.py         ← MT5 connection + trade execution
+│   └── config.py         ← Loads credentials from .env
+│
+├── strategies/
+│   └── crt_tbs.pine      ← TradingView Pine Script v6
+│
+├── docs/
+│   └── architecture.md   ← Detailed system documentation
+│
+├── .env.example          ← Credential template (safe to share)
+├── requirements.txt      ← Python dependencies
+├── run.py                ← Single command entry point
+└── README.md             ← You are here
+---
 
 ## Quick Start
 
 ### Prerequisites
 - Python 3.10+
-- MetaTrader 5 Terminal (Windows)
+- MetaTrader 5 Terminal (Windows only)
 - Git
 
 ### Run Locally
+
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/trading-bridge.git
+git clone https://github.com/anurag-devops03/trading-bridge.git
 cd trading-bridge
 
 # Create and activate virtual environment
@@ -55,22 +91,79 @@ pip install -r requirements.txt
 
 # Setup environment variables
 cp .env.example .env
-nano .env  # Fill in your MT5 credentials
+nano .env  # Fill in your real MT5 credentials
 
 # Start the bridge
 python run.py
 ```
 
-### Webhook Endpoint
-| Method | Endpoint   | Description                        |
-|--------|------------|------------------------------------|
-| GET    | /          | Health check — bridge status       |
-| POST   | /webhook   | Receives TradingView alert payload |
+---
 
-### TradingView Alert Payload Format
+## Webhook Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | / | Health check — confirms bridge is online |
+| POST | /webhook | Receives TradingView alert payload |
+
+### TradingView Alert Payload
+
+Set your TradingView alert message to:
+
 ```json
 {
-  "action": "buy",
-  "comment": "Long Entry new"
+  "action": "{{strategy.order.action}}",
+  "comment": "{{strategy.order.comment}}"
 }
 ```
+
+---
+
+## Environment Variables
+
+```bash
+# Copy template and fill real values
+cp .env.example .env
+```
+
+| Variable | Description | Example |
+|---|---|---|
+| MT5_LOGIN | Your MT5 account number | 12345678 |
+| MT5_PASSWORD | Your MT5 password | yourpassword |
+| MT5_SERVER | Your broker server name | XMGlobal-MT5 |
+| SYMBOL | Trading symbol | GOLD.i# |
+| LOT_SIZE | Trade lot size | 0.01 |
+| SL_POINTS | Stop loss in points | 2.0 |
+| TP_POINTS | Take profit in points | 2.5 |
+| PORT | Server port | 80 |
+
+---
+
+## CRT Strategy — How It Works
+
+| Concept | Detail |
+|---|---|
+| CRT Candle | Body ≥ 50% of total candle range |
+| Bull Signal | Sweeps below CRT low → closes back above + above EMA |
+| Bear Signal | Sweeps above CRT high → closes back below + below EMA |
+| EMA Filter | 15-period EMA confirms trend direction |
+| Cooldown | 10 bar wait prevents overtrading |
+
+Full strategy code → [`strategies/crt_tbs.pine`](strategies/crt_tbs.pine)
+
+---
+
+## Detailed Documentation
+
+Full architecture breakdown → [`docs/architecture.md`](docs/architecture.md)
+
+---
+
+## Project Status
+
+- [x] Phase 1 — Project Structure
+- [x] Phase 2 — Security Setup (.gitignore + .env)
+- [x] Phase 3 — Clean Modular Codebase
+- [x] Phase 4 — Dependencies (requirements.txt)
+- [x] Phase 5 — Documentation
+- [x] Phase 6 — GitHub Deployment
