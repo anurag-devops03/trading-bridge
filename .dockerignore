@@ -1,0 +1,22 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+env/
+
+# Git
+.git
+.gitignore
+
+# Docs
+docs/
+strategies/
+README.md
+
+# OS
+.DS_Store
+Thumbs.db

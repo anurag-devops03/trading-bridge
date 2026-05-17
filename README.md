@@ -98,6 +98,22 @@ python run.py
 ```
 
 ---
+### Run with Docker
+
+```bash
+# Build and start the bridge
+docker compose up --build
+
+# Run in background
+docker compose up --build -d
+
+# Stop the bridge
+docker compose down
+```
+
+> **Note:** Docker containerizes the FastAPI bridge only.
+> MetaTrader 5 terminal must run separately on Windows.
+> The bridge connects to MT5 via the MT5 Python library.
 
 ## Webhook Endpoints
 
